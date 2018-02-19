@@ -16,9 +16,14 @@ from sensor_msgs.msg import Image
 
 
 
-# def preprocess():
+def preprocess(img):
+    h,w = img.shape[:2]
+    L_Eye = img[0:h,0:w/2]
+    R_Eye = img[0:h,w/2:w]
+    return L_Eye
 #
-# def find_line():
+def find_line():
+    print("needs to be implemented")
 #
 # def follow_line():
 
@@ -28,13 +33,13 @@ def callback(data):
     try:
 	    #cv2.namedWindow("Image window", cv2.WINDOW_NORMAL)
         cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
-        cv2.imshow("title",cv_image)
-        cv2.waitKey(0)
+	    #cv2.imshow("title",L_Eye)
+        #cv2.waitKey(0)
     except CvBridgeError as e:
         print(e)
 
-    # img = preprocess(data.data)
-    # line = find_line(img)
+    img = preprocess(cv_image)
+    line = find_line(img)
     # dir = follow_line(line)
 
     # while not rp.is_shutdown():
