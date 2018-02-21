@@ -13,6 +13,7 @@ import rospy as rp
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
+import Control
 
 
 
@@ -21,15 +22,17 @@ def preprocess(img):
     L_Eye = img[0:h,0:w/2]
     R_Eye = img[0:h,w/2:w]
     return L_Eye
-#
+
 def find_line():
     print("needs to be implemented")
-#
-# def follow_line():
+
+def follow_line():
+    print("needs to be implemented")
 
 
 def callback(data):
     bridge = CvBridge()
+    control = Control()
     try:
 	    #cv2.namedWindow("Image window", cv2.WINDOW_NORMAL)
         cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
@@ -39,14 +42,13 @@ def callback(data):
         print(e)
 
     img = preprocess(cv_image)
-    line = find_line(img)
-    # dir = follow_line(line)
+    # line = find_line(img)
+    # control.speed,control.steering_angle,control.acceleration,control.jerk,control.steering_angle_velocity = follow_line(line)
 
     # while not rp.is_shutdown():
-    # output = dir
 
-    # rp.loginfo(output)
-    # pub.publish(output)
+    # rp.loginfo(control)
+    # pub.publish(control)
 
 
 def listener():
