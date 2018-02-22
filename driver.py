@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Author: Will Irwin
-Last Modified: 2/21/2018
+Last Modified: 2/22/2018
 Title:driver.py
 Inputs:
 
@@ -15,21 +15,22 @@ from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 def callback(data):
     try:
 		pub.publish(data)
+        print(data)
     except:
-        print("shit broke bro, steering directions that driver.py received are broken")
+        print("couldnt publish driving instructions, worthless garbage")
 
 def full_stop(data):
     try:
         pub.publish(data)
     except:
-        print("shit broke bro, full stop execution failed")
+        print("full stop instructions failed to execute, trash software")
 
 
 def driver():
     rp.init_node('Driver',anonymous = True)
     rp.Subscriber('movement_instructions',AckermannDriveStamped,callback)
     rp.Subscriber('full_stop',AckermannDriveStamped,full_stop)
-    pub=rp.Publisher("/vesc/ackermann_cmd_mux/input/navigation",AckermannDriveStamped,queue_size=10)
+    pub=rp.Publisher("/vesc/ackermann_cmd_mux/input/navigation",AckermannDriveStamped,queue_size=10)#i think this needs to change
     rp.spin()
 
 

@@ -12,11 +12,11 @@ import cv2
 import rospy as rp
 import numpy as np
 from sensor_msgs.msg import Image
-# import sensor_msgs.msg.Image
 from cv_bridge import CvBridge, CvBridgeError
-bridge = CvBridge()
 
+bridge = CvBridge()
 cap = cv2.VideoCapture(0)
+
 def get_zed_data():
     rp.init_node('Zed',anonymous = True)
     pub = rp.Publisher('zed_images',Image,queue_size=10)
@@ -28,7 +28,6 @@ def get_zed_data():
             output = bridge.cv2_to_imgmsg(frame, "bgr8")
         except CvBridgeError as e:
             print(e)
-        #rp.loginfo(output)
         pub.publish(output)
         rate.sleep()
     cap.release()
@@ -38,4 +37,3 @@ if __name__=="__main__":
         get_zed_data()
     except rp.ROSInterruptException:
         cap.release()
-

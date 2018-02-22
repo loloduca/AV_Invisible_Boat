@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Author: Will Irwin
-Last Modified: 2/12/2018
+Last Modified: 2/22/2018
 Title:follower.py
 Inputs:
 
@@ -14,7 +14,7 @@ import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
-
+import helper as hp
 
 def preprocess(img):
     h,w = img.shape[:2]
@@ -22,12 +22,31 @@ def preprocess(img):
     R_Eye = img[0:h,w/2:w]
     return L_Eye
 
-def find_line():
-    print("needs to be implemented")
+def find_line(img):
+    black_roi = np.copy(img)
 
-def follow_line():
-    print("needs to be implemented")
-    return speed,steering_angle,acceleration,jerk,steering_angle_velocity
+    vertices = [[80,540],[920,540],[470,300]]###todo modify this and next line to suit bretts roi function
+    roi = hp.region_of_interest(img,vertices)
+
+    black_roi[roi] = [0, 0, 0]
+    black_roi = img - black_roi
+
+    res_blue = hp.mask(black_roi, np.array([20,50,50]), np.array([30,255,255]))#todo proper hsv values from davids code
+
+    gray = hp.grayscale(res_blue)
+    blur = hp.gaussian_blur(gray,5)
+    edges = hp.canny(blur,40,60)
+    hough = hp.hough_lines(edges,1,np.pi/180,threshold=1,min_line_len=55,max_line_gap=70)
+    composite_line = hp.draw_line(img,hough)
+    return composite_line
+
+
+def follow_line(img):
+    try:
+        return speed,steering_angle,acceleration,jerk,steering_angle_velocity
+    except:
+        print("not implemented yet")
+
 
 
 def callback(data):
@@ -36,19 +55,17 @@ def callback(data):
     drive_msg = AckermannDrive()
     try:
         cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
-	    #cv2.imshow("title",L_Eye)
-        #cv2.waitKey(0)
-
         img = preprocess(cv_image)
-        # line = find_line(img)
-        # drive_msg.speed,drive_msg.steering_angle,drive_msg.acceleration,drive_msg.jerk,drive_msg.steering_angle_velocity = follow_line(line)
-        drive_msg_stamped.drive = drive_msg
-        # while not rp.is_shutdown():
 
-        # rp.loginfo(drive_msg_stamped)
-        # pub.publish(drive_msg_stamped)
-    except CvBridgeError as e:
-        print(e)
+        output = bridge.cv2_to_imgmsg(img, "bgr8")
+        preprocess_pub.publish(output)
+
+        line = find_line(img)
+        drive_msg.speed,drive_msg.steering_angle,drive_msg.acceleration,drive_msg.jerk,drive_msg.steering_angle_velocity = follow_line(line)
+        drive_msg_stamped.drive = drive_msg
+        move_pub.publish(drive_msg_stamped)
+    except:
+        print("Something went wrong with creating movement message ")
 
 
 
@@ -56,7 +73,8 @@ def callback(data):
 def follower():
     rp.init_node('Follower',anonymous = True)
     rp.Subscriber('zed_images',Image,callback)
-    pub = rp.Publisher('movement_instructions',AckermannDriveStamped)
+    move_pub = rp.Publisher('movement_instructions',AckermannDriveStamped)
+    preprocess_pub = rp.Publisher('preprocessed_zed',Image)
     rp.spin()
 
 
