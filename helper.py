@@ -74,4 +74,18 @@ def mask(img,lower_color,upper_color):
     return cv2.bitwise_and(img,img,mask = mask)
 
 def region_of_interest(img,vertices):
-    print("Brett needs to write this")
+    left_vertice = vertices[0]
+    right_vertice = vertices[1]
+    top_vertice = vertices[2]
+    fit_left = np.polyfit((left_vertice[0], top_vertice[0]), (left_vertice[1], top_vertice[1]), 1)
+    fit_right = np.polyfit((right_vertice[0], top_vertice[0]), (right_vertice[1], top_vertice[1]), 1)
+    fit_bottom = np.polyfit((left_vertice[0], right_vertice[0]), (left_vertice[1], right_vertice[1]), 1)
+
+    xsize = img.shape[1]
+    ysize = img.shape[0]
+
+    # create grid that will correspond to the pixels between the lines
+    XX, YY = np.meshgrid(np.arange(0, xsize), np.arange(0, ysize))
+
+    # use the grid to create a region
+    return (YY > (XX*fit_left[0] + fit_left[1])) & (YY > (XX*fit_right[0] + fit_right[1])) & (YY < (XX*fit_bottom[0] + fit_bottom[1]))

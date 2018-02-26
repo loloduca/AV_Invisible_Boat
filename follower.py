@@ -20,6 +20,7 @@ def preprocess(img):
     h,w = img.shape[:2]
     L_Eye = img[0:h,0:w/2]
     R_Eye = img[0:h,w/2:w]
+    print("here")
     return L_Eye
 
 def find_line(img):
@@ -30,8 +31,13 @@ def find_line(img):
 
     black_roi[roi] = [0, 0, 0]
     black_roi = img - black_roi
-
-    res_blue = hp.mask(black_roi, np.array([20,50,50]), np.array([30,255,255]))#todo proper hsv values from davids code
+    
+    hsv_img = hsv(np.copy(img))
+    lower_blue = np.array([100,50,50])
+    upper_blue = np.array([140,255,255])
+    mask_blue = cv2.inRange(hsv_img, lower_blue, upper_blue)
+    
+    res_blue = cv2.bitwise_and(black_roi,black_roi,mask = mask_blue)
 
     gray = hp.grayscale(res_blue)
     blur = hp.gaussian_blur(gray,5)
@@ -73,8 +79,8 @@ def callback(data):
 def follower():
     rp.init_node('Follower',anonymous = True)
     rp.Subscriber('zed_images',Image,callback)
-    move_pub = rp.Publisher('movement_instructions',AckermannDriveStamped)
-    preprocess_pub = rp.Publisher('preprocessed_zed',Image)
+    move_pub = rp.Publisher('movement_instructions',AckermannDriveStamped,queue_size=10)
+    preprocess_pub = rp.Publisher('preprocessed_zed',Image,queue_size=10)
     rp.spin()
 
 
