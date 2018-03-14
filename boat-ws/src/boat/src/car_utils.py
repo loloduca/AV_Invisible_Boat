@@ -24,15 +24,18 @@ class imgproc:
     def set_ROI(self, ROI):
         self.ROI = np.array([ROI],dtype=np.int32)
         self.ROI_BOUNDS = cv2.boundingRect(self.ROI)
-    def get_ROI_mask(self):
-        mask = np.zeros_like(self.image)
-        if len(self.image.shape) > 2:
-            channel_count = self.image.shape[2]
+    def get_ROI_mask(self,image,crop=True):
+        mask = np.zeros_like(image)
+        if len(image.shape) > 2:
+            channel_count = image.shape[2]
             ignore_color = (255,)*channel_count
         else:
             ignore_color = 255
         cv2.fillPoly(mask,self.ROI,ignore_color)
-        return cv2.bitwise_and(self.image,mask)[self.ROI_BOUNDS[1]:self.ROI_BOUNDS[1]+self.ROI_BOUNDS[3],self.ROI_BOUNDS[0]:self.ROI_BOUNDS[0]+self.ROI_BOUNDS[2]]
+	if crop:
+            return cv2.bitwise_and(image,mask)[self.ROI_BOUNDS[1]:self.ROI_BOUNDS[1]+self.ROI_BOUNDS[3],self.ROI_BOUNDS[0]:self.ROI_BOUNDS[0]+self.ROI_BOUNDS[2]]
+	else:
+	    return cv2.bitwise_and(image,mask)
     def get_color_mask(self,image,color_range):
         lower = np.array(color_range[0],dtype="uint8")
         upper = np.array(color_range[1],dtype="uint8")
@@ -42,7 +45,7 @@ class imgproc:
     def get_grayscale(self,image):
         return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     def clean_image(self,blur_size,color_range):
-        return self.get_grayscale(self.get_color_mask(self.get_blur(self.get_ROI_mask(),blur_size),color_range))
+        return self.get_grayscale(self.get_color_mask(self.get_ROI_mask(self.image),color_range))
     def slice_image(self,image,slices):
         h,w = image.shape[:2]
         sliceHeight = (h/slices)
@@ -75,6 +78,7 @@ class imgproc:
                 centerY = int(imageMoment['m01'] / imageMoment['m00'])+self.ROI_BOUNDS[1]
                 if self.display:
                     cv2.circle(overlay, (centerX, centerY), 5, (0, 0, 255), -1)
+                    self.web_view.publish(bridge.cv2_to_imgmsg(self.get_ROI_mask(overlay,crop=False), "bgr8"))
                 if centerX < self.width/2:
                     L_Centers[(self.height-centerY)//slice_size] += [centerX]
                     L_Weights[(self.height-centerY)//slice_size] += [(cv2.contourArea(c))/(rect_w*rect_h)]
@@ -97,7 +101,7 @@ class imgproc:
                 impulses += [center*weight]
         if self.display:
             try:
-                self.web_view.publish(bridge.cv2_to_imgmsg(overlay, "bgr8"))
+                self.web_view.publish(bridge.cv2_to_imgmsg(self.get_ROI_mask(overlay,crop=False), "bgr8"))
             except CvBridgeError as e:
                 print(e)
         if len(impulses) == 0:
